@@ -1,7 +1,7 @@
 import React from 'react';
 import clsx from 'clsx'; // Utility for conditional classes
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success' | 'secondaryOutline' | 'dangerOutline';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,7 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode; // Made children optional
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -31,7 +31,9 @@ export const Button: React.FC<ButtonProps> = ({
     outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-400',
     ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-gray-400',
     danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
-    success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500', // Green button style
+    success: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
+    secondaryOutline: 'border border-gray-300 text-gray-700 hover:bg-gray-100 focus:ring-gray-400',
+    dangerOutline: 'border border-red-500 text-red-500 hover:bg-red-50 focus:ring-red-400', // Red outline button style
   };
 
   const sizeStyles: Record<ButtonSize, string> = {

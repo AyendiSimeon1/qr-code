@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  title?: string; // Optional title prop
 }
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {

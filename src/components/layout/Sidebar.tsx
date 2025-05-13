@@ -10,6 +10,12 @@ const HomeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
   </svg>
 );
+const PlusCircleIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
 const CogIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" {...props}>
     <path
@@ -20,9 +26,21 @@ const CogIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   </svg>
 );
 
+const QrCodeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" {...props}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h2v2H7zm0 8h2v2H7zm8-8h2v2h-2zm0 8h2v2h-2zM7 11h2v2H7zm8 0h2v2h-2z" />
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeWidth={2} stroke="currentColor" fill="none" />
+  </svg>
+);
+
+
+
 
 const navigation = [
   { name: 'Home', href: '/dashboard', icon: HomeIcon }, // Adjust hrefs
+  { name: 'Create Record', href: '/create-record', icon: PlusCircleIcon },
+  { name: 'Scan QR Code', href: '/scan-qr', icon: QrCodeIcon },
   { name: 'Settings', href: '/settings', icon: CogIcon },
 ];
 
