@@ -1,12 +1,15 @@
 // src/redux/store.ts
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '@/redux/slices/auth';
+import recordsReducer from '@/redux/slices/records';
+import searchReducer from '@/redux/slices/search';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
+    records: recordsReducer,
+    search: searchReducer,
     // Add other reducers here as your app grows
-    // counter: counterReducer,
   },
   // devTools: process.env.NODE_ENV !== 'production', // Redux DevTools Extension is enabled by default in development
 });

@@ -5,6 +5,8 @@ import { Logo } from '../../components/ui/Logo';
 import { Button } from '../../components/ui/Button';
 import { InputField } from '../../components/ui/InputField';
 import { FeatureCard } from '../ui/FeatureCard';
+import { SearchResults } from './SearchResults';
+import { useSearch } from '@/redux/hooks/search';
 
 // Placeholder Icons
 const LockClosedIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -31,11 +33,14 @@ const DocumentCheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export const PublicSearchPage: React.FC = () => {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { results, isLoading, error, searchTerm, handleSearch: performSearch, clearSearch } = useSearch();
+  const [localSearchTerm, setLocalSearchTerm] = useState('');
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
-    console.log('Searching for:', searchTerm);
+    if (localSearchTerm.trim()) {
+      performSearch(localSearchTerm);
+    }
   };
 
   const handleLoginClick = () => {
@@ -70,12 +75,12 @@ export const PublicSearchPage: React.FC = () => {
             >
               <InputField
                 name="search"
-                placeholder="Search here"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search company name"
+                value={localSearchTerm}
+                onChange={(e) => setLocalSearchTerm(e.target.value)}
                 className="w-full text-sm sm:text-base"
                 containerClassName="mb-0 flex-grow"
-                aria-label="Search Record"
+                aria-label="Search Company"
               />
               <Button
                 type="submit"
@@ -86,6 +91,11 @@ export const PublicSearchPage: React.FC = () => {
                 Search
               </Button>
             </form>
+          </section>
+
+          {/* Search Results Section */}
+          <section className="mb-16">
+            <SearchResults results={results} isLoading={isLoading} error={error} />
           </section>
 
           {/* Discover Section */}

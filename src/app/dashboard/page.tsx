@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { RecordsTable } from '@/components/ui/RecordsTable';
 import { StatCard } from '@/components/ui/StatsCard';
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface RecordData {
   id: string | number;
@@ -32,10 +33,10 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
 const DashboardPage: React.FC = () => {
   const [records, setRecords] = useState<RecordData[]>(mockRecords);
   const [isLoading, setIsLoading] = useState<boolean>(false); // For potential API loading
+  const router = useRouter();
 
   const handleCreateRecord = () => {
-    console.log("Navigate to create record page or open modal");
-    // Example: router.push('/records/create');
+    router.push('/records/create');
   };
 
   // In a real app, fetch data in useEffect or using Next.js data fetching methods
