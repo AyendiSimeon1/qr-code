@@ -52,7 +52,7 @@ export const loginApi = async (credentials: LoginFormData): Promise<AuthResponse
 
   const headers: { [key: string]: string } = {};
   if (apiKey) {
-    headers[''] = apiKey;
+    headers['x-api-key'] = apiKey;
   }
 
   // Replace with your actual login endpoint and data structure
