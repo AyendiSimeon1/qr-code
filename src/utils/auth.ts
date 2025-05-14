@@ -4,7 +4,7 @@ import { LoginFormData } from '@/components/auth/LoginForm'; // Adjust path if n
 // Assuming you have a type for registration data
 // import { RegisterFormData } from '@/components/auth/RegisterForm';
 
-const API_BASE_URL = 'https://cert.ofissainternational.com/api'
+const API_BASE_URL = 'https://ofissa.godiscova.com/api'
 interface User {
   id: string;
   email: string;
@@ -52,7 +52,7 @@ export const loginApi = async (credentials: LoginFormData): Promise<AuthResponse
 
   const headers: { [key: string]: string } = {};
   if (apiKey) {
-    headers['X-API-Key'] = apiKey;
+    headers[''] = apiKey;
   }
 
   // Replace with your actual login endpoint and data structure
