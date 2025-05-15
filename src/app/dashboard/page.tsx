@@ -29,6 +29,8 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const tk = localStorage.getItem('authToken');
+console.log('i am the saved auth tokensssssASDASDsssssssasSDasss', tk);
 
 const DashboardPage: React.FC = () => {
   const [records, setRecords] = useState<RecordData[]>(mockRecords);

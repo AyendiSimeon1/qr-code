@@ -56,7 +56,7 @@ export const loginApi = async (credentials: LoginFormData): Promise<AuthResponse
   }
 
   // Replace with your actual login endpoint and data structure
-  const response = await axios.post<AuthResponse>(`${API_BASE_URL}/login`, credentials, {
+  const response = await axios.post<AuthResponse>('/api/login', credentials, {
     headers: headers
   });
   // On successful login, you might want to store the token here or in the Redux thunk

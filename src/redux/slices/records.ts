@@ -2,6 +2,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PressureTestingCertificationFormData } from '@/components/forms/PressureTestingCertificationForm';
 import { CalibrationCertificationFormData } from '@/components/forms/CalibrationCertificationForm';
+import { createRecordApi, CreateRecordResponse, RecordPayload } from '@/utils/records';
 
 // Define types for our state
 export type RecordType = 'pressure-testing' | 'calibration';
@@ -24,61 +25,26 @@ const initialState: RecordState = {
 };
 
 export const createRecord = createAsyncThunk<
-  // 1) Returned payload type
-  { id: string; type: RecordType; formData: any; createdAt: string },
-  // 2) Thunk argument type
-  { type: RecordType; formData: PressureTestingCertificationFormData | CalibrationCertificationFormData },
-  // 3) ThunkAPI config (for rejectWithValue)
+  CreateRecordResponse,
+  RecordPayload,
   { rejectValue: string }
 >(
   'records/createRecord',
-  async ({ type, formData }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      // Build request payload
-      const payload = { type, ...formData };
-
-      // Call your real API
-      const response = await fetch(
-        'https://cert.ofissainternational.com/api/new-record/',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // add auth headers here if needed, e.g. Authorization
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      // Handle non-2xx statuses
-      if (!response.ok) {
-        // Try to pull error message from body if available
-        let errorMsg = `Server returned ${response.status}`;
-        try {
-          const errJson = await response.json();
-          if (errJson?.message) errorMsg = errJson.message;
-        } catch {
-          /* ignore JSON parse errors */
-        }
-        return rejectWithValue(errorMsg);
-      }
-
-      // Parse the JSON response
-      const data = await response.json();
-
-      // Assuming your API returns something like { id, createdAt, ... }
-      return {
-        id: data.id,
-        type,
-        formData,
-        createdAt: data.createdAt || new Date().toISOString(),
-      };
+      const data = await createRecordApi(payload);
+      console.log('Record created successfully:', data);
+      return data;
     } catch (err: any) {
-      // Network error or other
-      return rejectWithValue(err.message || 'Failed to create record');
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to create record';
+      return rejectWithValue(msg);
     }
   }
 );
+
 // Create the slice
 const recordsSlice = createSlice({
   name: 'records',

@@ -38,7 +38,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const sizeStyles: Record<ButtonSize, string> = {
     sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base', // Default - adjust as per designs
+    md: 'px-4 py-2 text-base', 
     lg: 'px-6 py-3 text-lg',
   };
 
@@ -55,7 +55,7 @@ export const Button: React.FC<ButtonProps> = ({
       disabled={isLoading || props.disabled}
       {...props}
     >
-      {isLoading && <Spinner size="sm" className="mr-2" />} {/* Add Spinner component */}
+      {isLoading && <Spinner size="sm" className="mr-2" />} 
       {leftIcon && !isLoading && <span className="mr-2">{leftIcon}</span>}
       {children}
       {rightIcon && !isLoading && <span className="ml-2">{rightIcon}</span>}
@@ -63,9 +63,8 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-// Define Spinner component separately
+
 const Spinner: React.FC<{ size?: 'sm' | 'md' | 'lg', className?: string }> = ({ size = 'md', className }) => {
-    // Basic spinner implementation (replace with yours)
     const sizeClasses = { sm: 'h-4 w-4', md: 'h-5 w-5', lg: 'h-6 w-6' };
     return <div className={clsx('animate-spin rounded-full border-t-2 border-b-2 border-current', sizeClasses[size], className)}></div>;
 }

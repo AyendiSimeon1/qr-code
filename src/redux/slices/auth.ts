@@ -37,10 +37,18 @@ export const login = createAsyncThunk(
   async (credentials: LoginFormData, { rejectWithValue }) => {
     try {
       const response = await loginApi(credentials);
-      // Store token persistently
-      setAuthToken(response.token);
+      
+      const token = response.data?.token;
+      console.log('i am the saved auth token', token);
+      
+    
+      const tk =  localStorage.setItem('authToken', token);
+      
+     
+      console.log('i am the saved auth tokenssssssssssssss', tk);
+      // setAuthToken(response.token);
       console.log('the response', response);
-      return response; // This data will be in action.payload
+      return response; 
     } catch (error: any) {
       console.log('the error', error);
       const message = error.response?.data?.message || error.message || 'Login failed';
