@@ -4,18 +4,7 @@ import axios from 'axios';
 
 import { useEffect } from 'react';
 export default function Home() {
-  useEffect(() => {
-    const requestFun = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/api/items');
-        console.log('the response', response);
-      } catch (error) {
-        console.log('Error fetching data:', error);
-      }
-    };
-
-    requestFun();
-  }, []); 
+  
  
   
   return (

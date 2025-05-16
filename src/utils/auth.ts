@@ -1,8 +1,6 @@
 // src/lib/api/auth.ts
 import axios from 'axios';
-import { LoginFormData } from '@/components/auth/LoginForm'; // Adjust path if needed
-// Assuming you have a type for registration data
-// import { RegisterFormData } from '@/components/auth/RegisterForm';
+
 
 const API_BASE_URL = 'https://ofissa.godiscova.com/api'
 interface User {
@@ -13,6 +11,7 @@ interface User {
 }
 
 interface AuthResponse {
+  data: any;
   user: User;
   token: string;
   // ... other data from API response
@@ -41,7 +40,7 @@ export const setAuthToken = (token: string | null) => {
 
 
 // --- Login API Call ---
-export const loginApi = async (credentials: LoginFormData): Promise<AuthResponse> => {
+export const loginApi = async (credentials: any): Promise<AuthResponse> => {
   const apiKey = '13db0a2eda129aa67f8b2c60e175e1fd'
 
   if (!apiKey) {

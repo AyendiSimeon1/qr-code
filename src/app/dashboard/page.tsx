@@ -3,7 +3,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/Button';
 import { RecordsTable } from '@/components/ui/RecordsTable';
 import { StatCard } from '@/components/ui/StatsCard';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface RecordData {
@@ -14,14 +14,6 @@ interface RecordData {
   testStatus: 'Expired' | 'Current' | 'Warning';
 }
 
-// --- Paste mockRecords definition here ---
-const mockRecords: RecordData[] = [
-  { id: 1, companyName: 'Veltrup Oil & Gas', email: 'tomprezine@gmail.com', dateOfExpiration: '15/01/2025', testStatus: 'Warning' }, // Corrected date example
-  { id: 2, companyName: 'Winnly Ltd', email: 'sana@gmail.com', dateOfExpiration: '04/11/2024', testStatus: 'Current' },
-  { id: 3, companyName: 'Jombotron', email: 'rj219482@gmail.com', dateOfExpiration: '21/08/2025', testStatus: 'Current' },
-  { id: 4, companyName: 'Shell RA', email: 'keziah@gmail.com', dateOfExpiration: '10/02/2023', testStatus: 'Expired' },
-];
-
 // --- Paste PlusIcon definition here ---
 const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" {...props} className="w-5 h-5">
@@ -29,12 +21,12 @@ const PlusIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const tk = localStorage.getItem('authToken');
-console.log('i am the saved auth tokensssssASDASDsssssssasSDasss', tk);
 
 const DashboardPage: React.FC = () => {
-  const [records, setRecords] = useState<RecordData[]>(mockRecords);
-  const [isLoading, setIsLoading] = useState<boolean>(false); // For potential API loading
+  const [records, setRecords] = useState<any>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [certs, setCerts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   const handleCreateRecord = () => {
@@ -50,7 +42,37 @@ const DashboardPage: React.FC = () => {
   //     .finally(() => setIsLoading(false));
   // }, []);
 
-  const totalRecords = records.length; // Or get from API metadata
+  // const totalRecords = records.length || ''; // Or get from API metadata
+
+
+  
+
+  useEffect(() => {
+    const fetchCerts = async () => {
+      if (typeof window === 'undefined') return;
+      const token = localStorage.getItem('authToken');
+      console.log('i am the dashboard token', token);
+      try {
+        const res = await fetch('/api/all-certificates', {
+          method: 'GET', // or 'GET'
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          }
+        },);
+        const json = await res.json();
+        setRecords(json.data || []);
+      } catch (err) {
+        console.error('Error fetching certificates:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCerts();
+  }, []);
+
+  console.log('Fetched certificates:', records);
 
   return (
     <AppLayout>

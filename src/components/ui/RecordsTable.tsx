@@ -5,7 +5,7 @@ import { Spinner } from './Spinner'; // Assuming you have a Spinner component
 
 export interface RecordData {
   id: string | number;
-  companyName: string;
+  company_name: string;
   email: string;
   dateOfExpiration: string; // Or Date object, format as needed
   testStatus: 'Expired' | 'Current' | 'Warning'; // Ensure 'Warning' is included
@@ -98,7 +98,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ records, isLoading =
                 </td>
                 {/* Company Name Column */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-800">
-                  {record.companyName}
+                  {record.company_name}
                 </td>
                 {/* Email Column */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">

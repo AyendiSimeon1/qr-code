@@ -1,7 +1,7 @@
 // src/redux/slices/authSlice.ts
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { loginApi, logoutApi, setAuthToken, getAuthToken } from '@/utils/auth'; // Adjust path
-import { LoginFormData } from '@/components/auth/LoginForm'; // Adjust path
+
 // Import RegisterFormData if you implement registration
 // import { RegisterFormData } from '@/components/auth/RegisterForm';
 
@@ -34,7 +34,7 @@ const initialState: AuthState = {
 // Thunk for logging in
 export const login = createAsyncThunk(
   'auth/login',
-  async (credentials: LoginFormData, { rejectWithValue }) => {
+  async (credentials: any, { rejectWithValue }) => {
     try {
       const response = await loginApi(credentials);
       

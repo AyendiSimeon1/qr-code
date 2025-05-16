@@ -2,7 +2,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PressureTestingCertificationFormData } from '@/components/forms/PressureTestingCertificationForm';
 import { CalibrationCertificationFormData } from '@/components/forms/CalibrationCertificationForm';
-import { createRecordApi, CreateRecordResponse, RecordPayload } from '@/utils/records';
+import { createRecordApi, RecordPayload } from '@/utils/records';
 
 // Define types for our state
 export type RecordType = 'pressure-testing' | 'calibration';
@@ -25,7 +25,7 @@ const initialState: RecordState = {
 };
 
 export const createRecord = createAsyncThunk<
-  CreateRecordResponse,
+  any,
   RecordPayload,
   { rejectValue: string }
 >(

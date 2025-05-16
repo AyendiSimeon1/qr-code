@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { Button } from '@/components/ui/Button';
-import { QrReader } from 'react-qr-reader';
+import { AppLayout } from '@/components/layout/AppLayout'; // Assuming this is correctly imported
+import { Button } from '@/components/ui/Button'; // Assuming this is correctly imported
+import { Html5Qrcode, Html5QrcodeSupportedFormats,  Html5QrcodeResult } from 'html5-qrcode';
 
-interface QrScanResult {
-  getText(): string;
+// Define a type for the camera devices (already in your code, good)
+interface CameraDevice {
+  id: string;
+  label: string;
 }
 
 const ScanQrPage = () => {
@@ -15,291 +17,336 @@ const ScanQrPage = () => {
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
-  const [facing, setFacing] = useState<'environment' | 'user'>('environment');
   const [cameraPermission, setCameraPermission] = useState<PermissionState | 'prompt'>('prompt');
-  const [isVideoVisible, setIsVideoVisible] = useState(false);
-  const [userAgent, setUserAgent] = useState<string>('Loading...');
-  const [scanAttempt, setScanAttempt] = useState(0);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
+  
+  // Use a stable ID for the qr-reader div. useState ensures it's stable for the component's lifecycle.
+  const [qrReaderId] = useState(`qr-reader-${Math.random().toString(36).substr(2, 9)}`);
 
-  const qrScannerRef = useRef<HTMLDivElement | null>(null);
+  const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 3;
 
+  // Check and monitor camera permission
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setUserAgent(navigator.userAgent);
-    }
-  }, []);
-
-  useEffect(() => {
-    const checkCameraPermission = async () => {
-      if (typeof navigator.permissions?.query === 'function') {
-        try {
-          const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
-          setCameraPermission(result.state);
-          result.addEventListener('change', () => {
-            setCameraPermission(result.state);
-          });
-        } catch (err) {
-          console.warn('Permission API query failed:', err);
-        }
+    const checkPermission = async () => {
+      if (!navigator.permissions) {
+        console.warn('Navigator permissions API not supported.');
+        // Fallback: try to get user media directly to trigger prompt if needed,
+        // or assume 'prompt' and let the start scan action handle it.
+        setCameraPermission('prompt');
+        return;
+      }
+      try {
+        const result = await navigator.permissions.query({ name: 'camera' as PermissionName });
+        setCameraPermission(result.state);
+        result.addEventListener('change', () => setCameraPermission(result.state));
+      } catch (err) {
+        console.error('Error querying camera permission:', err);
+        setCameraPermission('prompt'); // Assume prompt if query fails
       }
     };
-    checkCameraPermission();
+    checkPermission();
   }, []);
 
-  const commonStartScanActions = () => {
-    setScanResult(null);
-    setError(null);
-    setIsVideoVisible(false);
-    setScanAttempt(prev => prev + 1); 
-    setIsScanning(true);
-    console.log('Attempting to start QR Scanner with camera facing:', facing);
-  };
-  
-  const startScanIfPermitted = () => {
-    if (cameraPermission === 'granted') {
-      commonStartScanActions();
-    } else {
-      console.warn("StartScanIfPermitted called but permission not granted.");
-    }
-  };
-
-  const requestCameraAccessAndScan = async () => {
-    setError(null); 
-    try {
-      console.log('Requesting camera access...');
-      await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: facing } 
-      });
-      console.log('Camera access granted by getUserMedia.');
-      setCameraPermission('granted');
-      commonStartScanActions();
-    } catch (err: any) {
-      console.error('Camera access denied or getUserMedia error:', err);
-      setCameraPermission('denied');
-      const errName = err.name || 'UnknownError';
-      const errMessage = err.message || 'No specific message.';
-      setError(`Camera access request failed (${errName}): ${errMessage}. Please allow camera access in your browser settings and try again.`);
-      setIsScanning(false);
-    }
-  };
-
+  // Load available cameras
   useEffect(() => {
-    let videoCheckInterval: NodeJS.Timeout | undefined;
-    let checkVideoPlayingInterval: NodeJS.Timeout | undefined;
-
-    if (isScanning && cameraPermission === 'granted') {
-      const checkForVideo = () => {
-        if (qrScannerRef.current) {
-          const videoElement = qrScannerRef.current.querySelector('video');
-          if (videoElement) {
-            console.log('Video element found in DOM for QrReader.');
-            setIsVideoVisible(true);
-            checkVideoPlayingInterval = setInterval(() => {
-              if (videoElement.readyState >= 2) {
-                console.log('QrReader Video is ready to play, dimensions:', videoElement.videoWidth, 'x', videoElement.videoHeight);
-                if (checkVideoPlayingInterval) clearInterval(checkVideoPlayingInterval);
-              }
-            }, 500);
-            if (videoCheckInterval) clearInterval(videoCheckInterval);
-          } else {
-            console.log('No video element found yet for QrReader.');
-            setIsVideoVisible(false);
+    Html5Qrcode.getCameras()
+      .then((devices) => {
+        if (devices && devices.length) {
+          setAvailableCameras(devices);
+          const backCameraIndex = devices.findIndex((device) =>
+            /back|rear|environment/i.test(device.label)
+          );
+          if (backCameraIndex !== -1) {
+            setCurrentCameraIndex(backCameraIndex);
+          } else if (devices.length > 0) {
+            setCurrentCameraIndex(0); // Default to the first camera if no back camera found
           }
         }
-      };
-      checkForVideo();
-      videoCheckInterval = setInterval(checkForVideo, 1000);
-    }
-    
-    return () => {
-      if (videoCheckInterval) clearInterval(videoCheckInterval);
-      if (checkVideoPlayingInterval) clearInterval(checkVideoPlayingInterval);
-    };
-  }, [isScanning, cameraPermission, scanAttempt]);
+      })
+      .catch((err) => {
+        console.error('Error fetching cameras:', err);
+        setError('Could not fetch camera list. Ensure permission is granted.');
+      });
+  }, [cameraPermission]); // Re-fetch if permission changes from prompt to granted
 
+  const onScanSuccess = useCallback((decodedText: string, decodedResult: Html5QrcodeResult) => {
+    console.log(`Scan result: ${decodedText}`, decodedResult);
+    setScanResult(decodedText);
+    setIsScanning(false); // This will trigger cleanup in the main useEffect
 
-  const handleScanWrapper = (result: QrScanResult | undefined | null, scanError: any) => {
-    if (scanResult) return; 
-    
-    if (result) {
-      handleScanSuccess(result);
-      return;
-    }
-    
-    let errorToReport: any;
-if (scanError) {
-  errorToReport = scanError;
-} else if (typeof scanError === 'string') {
-  errorToReport = new Error(scanError);
-} else if (scanError && typeof scanError.name === 'string' && typeof scanError.message === 'string') {
-  // If it's an object with name and message (like a duck-typed error)
-  errorToReport = new Error(`${scanError.name}: ${scanError.message}`);
-  errorToReport.name = scanError.name; // Preserve original name if possible
-} else {
-  // This is likely the case for the simple 'e'
-  errorToReport = new Error('QR Reader failed to initialize or process video. Check camera and permissions.');
-  errorToReport.name = 'QrReaderInternalError'; // Give it a more specific name
-}
-  };
-  
-  const handleScanSuccess = (result: QrScanResult) => {
-    const textResult = result.getText();
-    console.log('QR Scan successful:', textResult);
-    setScanResult(textResult);
-    setIsScanning(false);
-    router.push(`/qr-result/${encodeURIComponent(textResult)}`);
-  };
-
-  const handleScanError = (currentError: Error) => {
-    const errorName = currentError.name || 'Error';
-    const errorMessageText = currentError.message || 'An unexpected issue occurred.';
-    console.error(`Displaying Scan Error - Name: ${errorName}, Message: ${errorMessageText}`);
-    setError(`Failed to scan QR code (${errorName}). ${errorMessageText}. Please try again or check lighting conditions.`);
-    setIsScanning(false);
-  };
-  
-  const toggleCamera = () => {
-    setFacing(prevFacing => prevFacing === 'environment' ? 'user' : 'environment');
-    setIsScanning(false); 
+    // Navigate after a short delay to show success message/feedback
     setTimeout(() => {
-      if (cameraPermission === 'granted') {
-        commonStartScanActions();
-      } else {
-        requestCameraAccessAndScan();
-      }
-    }, 100);
-  };
+      router.push(`/qr-result/${encodeURIComponent(decodedText)}`);
+    }, 500);
+  }, [router]);
 
-  const handlePrimaryScanButton = () => {
-    if (cameraPermission === 'granted') {
-      commonStartScanActions();
+  const onScanFailure = useCallback((errorMessage: string) => {
+    // Annoying "QR code not found." message can be ignored if desired.
+    if (!errorMessage.toLowerCase().includes('qr code not found')) {
+      console.warn(`QR Scan Error: ${errorMessage}`);
+      // You could set a transient error message here if needed
+      // setError(`Scan Error: ${errorMessage.substring(0,100)}`);
+    }
+  }, []);
+
+  // Main useEffect to handle scanner start/stop
+  useEffect(() => {
+    const qrCodeRegion = document.getElementById(qrReaderId);
+
+    if (isScanning && qrCodeRegion && cameraPermission === 'granted') {
+      // Initialize Html5Qrcode
+      if (!html5QrcodeRef.current) {
+        html5QrcodeRef.current = new Html5Qrcode(qrReaderId, { 
+            verbose: false, // Set to true for more logs from the library
+            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
+        });
+      }
+      const html5qrcode = html5QrcodeRef.current;
+
+      // Configuration for the scanner
+      const qrboxFunction = (viewfinderWidth: number, viewfinderHeight: number): any => {
+        const minEdgePercentage = 0.7; // 70%
+        const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+        const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+        return { width: qrboxSize, height: qrboxSize };
+      };
+
+      const config = {
+        fps: 10,
+        qrbox: qrboxFunction,
+        aspectRatio: 1.0, // Or calculate based on video stream
+        // videoConstraints: { // More specific constraints, apply with caution
+        //   width: { ideal: 1280 },
+        //   height: { ideal: 720 },
+        // }
+      };
+      
+      let cameraConfigToUse: string | object = { facingMode: 'environment' };
+      if (availableCameras.length > 0 && availableCameras[currentCameraIndex]) {
+        cameraConfigToUse = { deviceId: { exact: availableCameras[currentCameraIndex].id } };
+      }
+      
+      console.log("Starting scanner with camera:", cameraConfigToUse, "and config:", config);
+
+      html5qrcode.start(
+          cameraConfigToUse,
+          config,
+          onScanSuccess,
+          onScanFailure
+        )
+        .then(() => {
+          console.log("Scanner started successfully.");
+          setError(null); // Clear previous errors
+          retryCountRef.current = 0;
+        })
+        .catch((err: any) => {
+          console.error('Error starting scanner:', err);
+          // Handle specific errors
+          if (err.name === 'IndexSizeError' && retryCountRef.current < MAX_RETRIES) {
+            retryCountRef.current += 1;
+            console.warn(`Retrying scanner start (${retryCountRef.current}/${MAX_RETRIES})`);
+            // Potentially re-trigger this effect after a delay, or let user retry
+            setIsScanning(false); // Toggle to allow retry
+            setTimeout(() => setIsScanning(true), 500);
+            return;
+          }
+
+          let message = `Failed to start camera: ${err.name || 'Unknown Error'}`;
+          if (err.message) message += ` - ${err.message}`;
+
+          if (err.name === 'NotAllowedError') {
+            message = 'Camera permission denied. Please enable it in your browser settings.';
+            setCameraPermission('denied');
+          } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            message = 'No suitable camera found. Ensure a camera is connected and enabled.';
+          } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+            message = 'Camera is already in use or cannot be accessed. Try closing other apps using the camera.';
+          } else if (err.name === 'OverconstrainedError') {
+            message = 'Camera does not support the requested constraints (e.g., resolution). Try different settings or camera.';
+          }
+          setError(message);
+          setIsScanning(false); // Stop scanning if start fails
+        });
+    } else if (!isScanning && html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+        // Stop scanning if isScanning is set to false
+        html5QrcodeRef.current.stop()
+          .then(() => {
+            console.log('Scanner stopped successfully.');
+            // html5QrcodeRef.current = null; // Don't nullify here, can reuse the instance
+          })
+          .catch((err) => {
+            console.error('Error stopping scanner:', err);
+            setError('Failed to stop the scanner.');
+          });
+    }
+
+    // Cleanup on component unmount or if dependencies change causing scanner to stop
+    return () => {
+      if (html5QrcodeRef.current && html5QrcodeRef.current.isScanning) {
+        console.log("Cleaning up scanner...");
+        html5QrcodeRef.current.stop()
+          .catch(err => console.error('Error stopping scanner during cleanup:', err));
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScanning, currentCameraIndex, availableCameras, qrReaderId, cameraPermission, onScanSuccess, onScanFailure]);
+
+
+  // Stop scanner when tab becomes hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isScanning) {
+        console.log("Tab hidden, stopping scanner.");
+        setIsScanning(false);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isScanning]);
+
+
+  const handleStartStopScan = async () => {
+    if (!isScanning) {
+      setError(null); // Clear previous errors
+      setScanResult(null);
+
+      // Check permission before attempting to scan
+      if (cameraPermission === 'denied') {
+        setError('Camera permission is denied. Please enable it in your browser settings.');
+        return;
+      }
+      
+      if (cameraPermission === 'prompt' || cameraPermission !== 'granted') {
+        // Try to prompt for permission by requesting media stream
+        // This is a common way to trigger the browser's permission dialog
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          // If successful, the permission state should update via the permission API listener.
+          // We can also manually update it here and close the stream.
+          stream.getTracks().forEach(track => track.stop());
+          setCameraPermission('granted'); // Tentatively set, listener will confirm
+          console.log("Camera permission obtained via direct getUserMedia call.");
+          setIsScanning(true); // Now attempt to start
+        } catch (err: any) {
+          console.error("Error requesting camera permission:", err);
+          setError('Camera permission denied or an error occurred. Please enable camera access.');
+          setCameraPermission('denied'); // Update state
+          return;
+        }
+      } else {
+         // Permission already granted
+        setIsScanning(true);
+      }
     } else {
-      requestCameraAccessAndScan();
+      setIsScanning(false); // If already scanning, stop it
     }
   };
+
+  const handleSwitchCamera = () => {
+    if (availableCameras.length > 1) {
+      // Stop current scanner if active by setting isScanning to false.
+      // The main useEffect will handle stopping it.
+      // Then, update camera index and restart.
+      if (isScanning) {
+        setIsScanning(false);
+        // Give a moment for the scanner to stop before restarting with new camera
+        setTimeout(() => {
+          setCurrentCameraIndex((prevIndex) => (prevIndex + 1) % availableCameras.length);
+          setIsScanning(true);
+        }, 200); // Adjust delay if needed
+      } else {
+        // If not scanning, just cycle the camera index. User can press "Start" later.
+        setCurrentCameraIndex((prevIndex) => (prevIndex + 1) % availableCameras.length);
+      }
+    } else {
+      setError('No other cameras available to switch to.');
+    }
+  };
+
+  const currentCameraLabel = availableCameras[currentCameraIndex]?.label || 'Default Camera';
 
   return (
     <AppLayout title="Scan QR Code">
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-semibold mb-6 text-gray-800">Scan QR Code</h1>
-        <div className="p-6 border border-gray-300 rounded-lg shadow-sm bg-white text-center">
-          {!isScanning && (
-            <Button 
-              onClick={handlePrimaryScanButton} 
-              variant="primary" 
-              size="lg"
-            >
-              {cameraPermission === 'prompt' ? 'Allow Camera & Scan' : 
-               cameraPermission === 'denied' ? 'Try Granting Camera Access' : 'Start Scanning'}
-            </Button>
+        
+        <div className="p-6 border border-gray-300 rounded-lg shadow-sm bg-white">
+          {cameraPermission === 'denied' && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+              Camera permission denied. Please enable camera access in your browser settings and refresh the page.
+            </div>
           )}
-
-          {cameraPermission === 'denied' && !isScanning && error && (
-            <div className="mt-4 mb-6 p-4 bg-yellow-50 border border-yellow-300 rounded-md">
-              <h2 className="text-xl font-medium text-yellow-700">Camera Access Issue</h2>
-              <p className="text-gray-700 mt-2">{error}</p>
+          {cameraPermission === 'prompt' && !isScanning && (
+            <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 border border-yellow-400 rounded">
+              Camera permission is required. Click "Start Scanning" to allow access.
             </div>
           )}
 
-          {isScanning && cameraPermission === 'granted' && (
-            <div>
-              <p className="text-lg text-gray-600 mb-4">Position the QR code within the frame.</p>
-              
-              {!isVideoVisible && !error && (
-                <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                  Initializing camera... Please wait.
-                </div>
-              )}
-              
-              <div 
-                ref={qrScannerRef} 
-                className="w-full max-w-md mx-auto bg-gray-200 rounded-md overflow-hidden relative"
-                style={{ height: "300px" }}
-              >
-                <QrReader
-                  key={`${facing}-${scanAttempt}`}
-                  onResult={handleScanWrapper}
-                  constraints={{ 
-                    facingMode: facing,
-                  }}
-                  videoContainerStyle={{ 
-                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%'
-                  }}
-                  videoStyle={{ 
-                    width: '100%', height: '100%', objectFit: 'cover' 
-                  }}
-                  scanDelay={500}
-                  ViewFinder={() => ( 
-                    <div style={{
-                      position: 'absolute', top: '50%', left: '50%',
-                      width: '60%', height: '60%',
-                      border: '3px solid white', borderRadius: '8px',
-                      boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
-                      transform: 'translate(-50%, -50%)',
-                      pointerEvents: 'none',
-                    }} />
-                  )}
-                />
-              </div>
-              
-              <div className="mt-4 flex justify-center gap-4">
-                <Button onClick={() => setIsScanning(false)} variant="secondaryOutline">
-                  Cancel Scan
-                </Button>
-                <Button onClick={toggleCamera} variant="secondary">
-                  Switch Camera
-                </Button>
-              </div>
+          {error && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded">
+              <strong>Error:</strong> {error}
             </div>
-          )}
-          {isScanning && cameraPermission === 'prompt' && (
-            <p className="text-lg text-gray-600 mb-4">Waiting for camera permission prompt...</p>
           )}
 
           {scanResult && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-300 rounded-md">
-              <h2 className="text-xl font-medium text-green-700">Scan Successful!</h2>
-              <p className="text-gray-700 mt-2">Data: {scanResult}</p>
-              <p className="text-gray-600">Redirecting to details page...</p>
+            <div className="mb-4 p-3 bg-green-100 text-green-700 border border-green-400 rounded">
+              <strong>Scan Success!</strong> Result: {scanResult}
+              <p className="text-sm">Redirecting...</p>
             </div>
           )}
+          
+          <div className="text-center">
+            {/* Scanner video feed area */}
+            {/* This div MUST be in the DOM for html5-qrcode to attach the video stream */}
+            {/* We control its visibility using CSS rather than conditionally rendering the div itself */}
+            <div 
+              className={`w-full max-w-md mx-auto bg-gray-200 rounded-md overflow-hidden relative transition-all duration-300 ease-in-out ${
+                isScanning && !scanResult ? 'h-[400px] opacity-100 mb-4' : 'h-0 opacity-0'
+              }`}
+              style={{ 
+                // height: isScanning && !scanResult ? '400px' : '0', // Handled by Tailwind classes
+                // Using minHeight to prevent collapse during transition if needed
+              }}
+            >
+              <div id={qrReaderId} className="w-full h-full" />
+            </div>
 
-          {error && !isScanning && (
-            <div className="mt-6 p-4 bg-red-50 border border-red-300 rounded-md">
-              <h2 className="text-xl font-medium text-red-700">Scan Error</h2>
-              <p className="text-gray-700 mt-2">{error}</p>
-              <div className="mt-2 text-gray-600">
-                <p>Tips:</p>
-                <ul className="list-disc pl-5 text-gray-600 text-left text-sm">
-                  <li>Ensure the QR code is well-lit and not blurry.</li>
-                  <li>Hold your device steady.</li>
-                  <li>Make sure the entire QR code is visible in the frame.</li>
-                  <li>Try switching cameras if available.</li>
-                  <li>If using desktop, ensure you're using a supported browser (Chrome, Edge, or Firefox).</li>
-                  <li>Check browser console (F12 - Console) for more detailed error messages.</li>
-                </ul>
-              </div>
-              <Button onClick={handlePrimaryScanButton} variant="primary" className="mt-4">
-                Try Again
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        {process.env.NODE_ENV !== 'production' && (
-          <div className="mt-6 p-4 border border-gray-300 rounded-lg bg-gray-50">
-            <h3 className="text-sm font-semibold text-gray-700">Debug Info:</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <p>Camera Permission: {cameraPermission}</p>
-              <p>Camera Facing: {facing}</p>
-              <p>Scanning Active: {isScanning ? 'Yes' : 'No'}</p>
-              <p>Video Element Expected Visible: {isVideoVisible ? 'Yes' : 'No'}</p>
-              <p>Scan Attempt: {scanAttempt}</p>
-              <p>Browser: {userAgent}</p>
-              <p>Current Error State: {error || 'null'}</p>
-            </div>
+            {!scanResult && (
+              <>
+                <Button onClick={handleStartStopScan} variant="primary" size="lg" disabled={cameraPermission === 'denied' && !isScanning}>
+                  {isScanning ? 'Stop Scanning' : 'Start Scanning'}
+                </Button>
+
+                {availableCameras.length > 1 && !isScanning && (
+                  <Button onClick={handleSwitchCamera} variant="secondary" className="ml-2">
+                    Switch Camera
+                  </Button>
+                )}
+                 {isScanning && availableCameras.length > 1 && (
+                  <Button onClick={handleSwitchCamera} variant="secondaryOutline" className="ml-2">
+                    Switch Camera
+                  </Button>
+                )}
+              </>
+            )}
+
+            {availableCameras.length > 0 && !isScanning && (
+              <p className="text-sm text-gray-600 mt-2">
+                Selected camera: {currentCameraLabel || `Camera ${currentCameraIndex + 1}`}
+              </p>
+            )}
+            {isScanning && (
+               <p className="text-sm text-gray-600 mt-2">
+                Scanning with: {currentCameraLabel || `Camera ${currentCameraIndex + 1}`}
+              </p>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </AppLayout>
   );

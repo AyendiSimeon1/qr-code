@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { PressureTestingCertificationForm, PressureTestingCertificationFormData } from '@/components/forms/PressureTestingCertificationForm';
 import { CalibrationCertificationForm, CalibrationCertificationFormData } from '@/components/forms/CalibrationCertificationForm';
 import { useRecords } from '@/redux/hooks/records';
+import { CertificateGenerator } from '@/components/CertificateComponent';
 
 type FormType = 'pressure-testing' | 'calibration' | null;
 
@@ -18,11 +19,13 @@ const CreateRecordPage: React.FC = () => {
     submitPressureTestingForm, 
     submitCalibrationForm, 
     isSubmitting, 
-    isSuccess, 
+    isSuccess,
+    certificateData,
+    setCertificateData, 
     error 
   } = useRecords();
 
-  // Handle form selection
+  console.log('Certificate Data:', certificateData);
   const handleSelectForm = (formType: FormType) => {
     setSelectedForm(formType);
   };
@@ -32,7 +35,9 @@ const CreateRecordPage: React.FC = () => {
     await submitPressureTestingForm(data);
     // Navigate to dashboard or record details page on success
     if (isSuccess) {
-      router.push('/dashboard');
+
+
+      // router.push('/dashboard');
     }
   };
 
@@ -41,8 +46,12 @@ const CreateRecordPage: React.FC = () => {
     await submitCalibrationForm(data);
     // Navigate to dashboard or record details page on success
     if (isSuccess) {
-      router.push('/dashboard');
+      // router.push('/dashboard');
     }
+  };
+
+  const handleCloseCertificate = () => {
+    setCertificateData(null);
   };
 
   return (
@@ -119,6 +128,14 @@ const CreateRecordPage: React.FC = () => {
             />
           </div>
         )}
+
+
+{certificateData && (
+  <CertificateGenerator
+    data={certificateData}
+    onClose={handleCloseCertificate}
+  />
+)}
       </div>
     </AppLayout>
   );
