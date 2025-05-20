@@ -28,13 +28,10 @@ interface QrResultDisplayData {
 
 const extractCertNoFromUrl = (scannedUrl: string): string | null => {
   try {
-    // Get the last three characters from the decoded URL string
-    if (typeof scannedUrl === 'string' && scannedUrl.length >= 3) {
-      return scannedUrl.slice(-3);
-    }
-    return null;
+    const match = scannedUrl.match(/\/qr-result\/([^/]+)/);
+    return match ? match[1] : null;
   } catch (error) {
-    console.error("Error extracting last three letters as cert_no:", error);
+    console.error("Error extracting cert_no from URL:", error);
     return null;
   }
 };
