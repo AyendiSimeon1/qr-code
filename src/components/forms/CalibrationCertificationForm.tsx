@@ -105,11 +105,15 @@ export const CalibrationCertificationForm: React.FC<CalibrationCertificationForm
             placeholder="Enter certificate number"
             register={register('cert_no', {
               required: 'Certificate number is required',
-            
-            
+              minLength: { value: 3, message: 'Certificate number must be exactly 3 letters' },
+              maxLength: { value: 7, message: 'Certificate number must be exactly 7 letters' },
+              pattern: {
+                value: /^[A-Za-z]{3}$/,
+                message: 'Certificate number must be exactly 3 letters (A-Z)'
+              }
             })}
             error={errors.cert_no}
-            maxLength={10}
+            maxLength={3}
           />
           <InputField
             label="Serial Number"
