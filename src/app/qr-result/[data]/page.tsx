@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
+import { format } from 'date-fns';
 
 // Interface for the data expected from your /api/get-cert/ endpoint (via proxy)
 interface ApiCertificateData {
@@ -42,13 +43,11 @@ const fetchCertificateDataByCertNo = async (
   originalScannedUrl: string
 ): Promise<QrResultDisplayData | null> => {
   // --- Get Auth Token from localStorage ---
-  // let authToken: string | null = null;
-  const authToken = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ0ZXN0QGdtYWlsLmNvbSIsImF1ZCI6InVzZXIiLCJpYXQiOjE3NDc0MTQ4NjIsImV4cCI6MTc0NzQxODQ2MiwidXNlcl9pZCI6MCwiZW1haWwiOiJ0ZXN0QGdtYWlsLmNvbSJ9.suix4v9We8YCgPmQOd2RVp8uVmklphNcSoskOU4xVWs';
-  // if (typeof window !== 'undefined') { // Ensure localStorage is available (client-side)
-  //   authToken = localStorage.getItem('authToken'); // REPLACE 'yourAuthTokenKey'
-  // }
-
-  console.log('i am the auth token for the scanner', authToken);
+  let authToken: string | null = null;
+  if (typeof window !== 'undefined') { // Ensure localStorage is available (client-side)
+    authToken = localStorage.getItem('authToken'); // REPLACE 'authToken' with your actual key if different
+    console.log('Fetched auth token from localStorage:', authToken);
+  }
 
   // Construct URL for your Next.js proxy API route
   const proxyApiUrl = `/api/get-certificate-proxy?cert_no=${encodeURIComponent(certNo)}`;
@@ -135,7 +134,9 @@ const QrResultPage: React.FC = () => {
   const [extractedCertNo, setExtractedCertNo] = useState<string | null>(null);
 
   console.log(' you i am the data', data);
+  const certData = data && data.details && data.details.data ? data.details.data[0] || '' : '';
 
+  console.log('the cert data', certData);
   useEffect(() => {
     console.log('QrResultPage - Raw decoded data from URL param:', `"[${rawDecodedDataFromUrl}]"`);
     console.log('QrResultPage - Cleaned Scanned URL:', `"[${cleanedScannedUrl}]"`);
@@ -177,10 +178,10 @@ const QrResultPage: React.FC = () => {
 
   // ... (rest of the JSX for QrResultPage remains the same)
   return (
-    <AppLayout title={data ? `Certificate: ${data.title}` : 'QR Code Result'}>
+    <AppLayout title={data ? `Certificate Data` : 'QR Code Result'}>
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-semibold mb-6 text-gray-800">
-          {loading ? 'Loading Certificate Details...' : data ? data.title : 'Certificate Result'}
+          {loading ? 'Loading Certificate Details...'  : 'Certificate Result'}
         </h1>
 
         {loading && (
@@ -203,22 +204,41 @@ const QrResultPage: React.FC = () => {
         {!loading && !error && data && (
           <div className="p-6 border border-gray-300 rounded-lg shadow-sm bg-white space-y-4">
             <p className="text-md text-gray-600">
-              Certificate ID (from API):
+              Report generated on
               <strong className="block text-lg text-gray-800 break-all">{data.id}</strong>
             </p>
             {data.details.data.company_name && <p className="text-lg text-gray-700"><strong>Description:</strong> {data.description}</p>}
-            <h1>how : { data.details.data.certificate_type
- }</h1>
+            <h1>Expiry timeline: { certData.due_date }</h1>
             <h2 className="text-2xl font-semibold text-gray-800 mt-6 mb-3">Certificate Details:</h2>
             {Object.keys(data.details).length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 bg-gray-50 p-4 rounded-md">
-                {Object.entries(data.details).map(([key, value]) => (
-                  <div key={key} className="py-1">
-                    <span className="font-medium text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()}: </span>
-                    <span className="text-gray-800">{String(value)}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+               
+                <div className="flex flex-col space-y-2">
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
+                    <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${certData.status === 'Active' || !certData.status ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{certData.status ? certData.status : 'Active'}</span>
                   </div>
-                ))}
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Date of Registration</span>
+                    <span className="block text-gray-800 text-sm font-mono">
+                      {certData.created_at ? format(new Date(certData.created_at), 'PPPp') : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Date of Certification</span>
+                    <span className="block text-gray-800 text-sm font-mono">
+                      {certData.date_issued ? format(new Date(certData.date_issued), 'PPPp') : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Serial No</span>
+                    <span className="block text-gray-800 text-sm font-mono">
+                      {certData.seriel_no || 'N/A'}
+                    </span>
+                  </div>
+                </div>
               </div>
+              
             ) : (
               <p className="text-gray-600">No additional details available.</p>
             )}

@@ -4,11 +4,14 @@ import { Badge } from './Badge';
 import { Spinner } from './Spinner'; // Assuming you have a Spinner component   
 
 export interface RecordData {
+  due_date: string | number | Date;
+  type_of_inspection: ReactNode;
+  test_date: ReactNode;
   id: string | number;
   company_name: string;
   email: string;
   dateOfExpiration: string; // Or Date object, format as needed
-  testStatus: 'Expired' | 'Current' | 'Warning'; // Ensure 'Warning' is included
+  testStatus: 'Exp+ired' | 'Current' | 'Warning'; // Ensure 'Warning' is included
 }
 
 // --- Define or Import Warning Icon ---
@@ -66,7 +69,7 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ records, isLoading =
               Company Name
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-              Email
+              Test Type
             </th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
               Date of Expiration
@@ -102,12 +105,19 @@ export const RecordsTable: React.FC<RecordsTableProps> = ({ records, isLoading =
                 </td>
                 {/* Email Column */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {record.email}
+                  {record.type_of_inspection
+}
                 </td>
                 {/* Date of Expiration Column */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                   {/* You might want to format the date here if it's a Date object */}
-                  {record.dateOfExpiration}
+                  {record.test_date
+                    ? new Date(record.due_date).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                      })
+                    : 'N/A'}
                 </td>
           
                 <td className="px-6 py-4 whitespace-nowrap text-sm">

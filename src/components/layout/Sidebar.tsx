@@ -39,9 +39,9 @@ const QrCodeIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
 
 const navigation = [
   { name: 'Home', href: '/dashboard', icon: HomeIcon }, // Adjust hrefs
-  { name: 'Create Record', href: '/create-record', icon: PlusCircleIcon },
+  { name: 'Create Record', href: '/records/create', icon: PlusCircleIcon },
   { name: 'Scan QR Code', href: '/scan-qr', icon: QrCodeIcon },
-  { name: 'Settings', href: '/settings', icon: CogIcon },
+
 ];
 
 export const Sidebar: React.FC = () => {

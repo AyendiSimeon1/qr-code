@@ -21,8 +21,16 @@ const ScanQrPage = () => {
   const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   
-  // Use a stable ID for the qr-reader div. useState ensures it's stable for the component's lifecycle.
-  const [qrReaderId] = useState(`qr-reader-${Math.random().toString(36).substr(2, 9)}`);
+  // Use a stable ID for the qr-reader div, but only generate it on the client to avoid hydration errors
+  const qrReaderIdRef = useRef<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    if (!qrReaderIdRef.current) {
+      qrReaderIdRef.current = `qr-reader-${Math.random().toString(36).substr(2, 9)}`;
+    }
+  }, []);
 
   const html5QrcodeRef = useRef<Html5Qrcode | null>(null);
   const retryCountRef = useRef(0);
@@ -92,14 +100,14 @@ const ScanQrPage = () => {
     }
   }, []);
 
-  // Main useEffect to handle scanner start/stop
+ 
   useEffect(() => {
-    const qrCodeRegion = document.getElementById(qrReaderId);
+    const qrCodeRegion = document.getElementById(qrReaderIdRef.current || '');
 
     if (isScanning && qrCodeRegion && cameraPermission === 'granted') {
-      // Initialize Html5Qrcode
+      
       if (!html5QrcodeRef.current) {
-        html5QrcodeRef.current = new Html5Qrcode(qrReaderId, { 
+        html5QrcodeRef.current = new Html5Qrcode(qrReaderIdRef.current || '', { 
             verbose: false, // Set to true for more logs from the library
             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ]
         });
@@ -192,7 +200,7 @@ const ScanQrPage = () => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isScanning, currentCameraIndex, availableCameras, qrReaderId, cameraPermission, onScanSuccess, onScanFailure]);
+  }, [isScanning, currentCameraIndex, availableCameras, cameraPermission, onScanSuccess, onScanFailure]);
 
 
   // Stop scanner when tab becomes hidden
@@ -308,12 +316,11 @@ const ScanQrPage = () => {
               className={`w-full max-w-md mx-auto bg-gray-200 rounded-md overflow-hidden relative transition-all duration-300 ease-in-out ${
                 isScanning && !scanResult ? 'h-[400px] opacity-100 mb-4' : 'h-0 opacity-0'
               }`}
-              style={{ 
-                // height: isScanning && !scanResult ? '400px' : '0', // Handled by Tailwind classes
-                // Using minHeight to prevent collapse during transition if needed
-              }}
             >
-              <div id={qrReaderId} className="w-full h-full" />
+              {/* Only render the qr-reader div on the client to avoid hydration errors */}
+              {isClient && (
+                <div id={qrReaderIdRef.current || ''} className="w-full h-full" />
+              )}
             </div>
 
             {!scanResult && (
