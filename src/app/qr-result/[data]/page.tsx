@@ -177,44 +177,45 @@ const QrResultPage: React.FC = () => {
     }
   }, [cleanedScannedUrl, rawDecodedDataFromUrl]);
 
-  // ... (rest of the JSX for QrResultPage remains the same)
   return (
     <AppLayout title={data ? `Certificate Data` : 'QR Code Result'}>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-semibold mb-6 text-gray-800">
-          {loading ? 'Loading Certificate Details...'  : 'Certificate Result'}
+      {/* Container with responsive max-width and padding */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-6 text-gray-800">
+          {loading ? 'Loading Certificate Details...' : 'Certificate Result'}
         </h1>
 
         {loading && (
-          <div className="p-6 border border-gray-300 rounded-lg shadow-sm bg-white text-center">
-            <p className="text-lg text-gray-600">
-              Loading details for certificate ID: "{extractedCertNo || 'Extracting ID...'}"...
+          <div className="p-4 sm:p-6 border border-gray-300 rounded-lg shadow-sm bg-white text-center">
+            <p className="text-base sm:text-lg text-gray-600">
+              Loading details for certificate ID: "<strong className="break-all">{extractedCertNo || 'Extracting ID...'}</strong>"...
             </p>
-            <div className="animate-pulse mt-2">Fetching data...</div>
+            <div className="animate-pulse mt-2 text-sm sm:text-base">Fetching data...</div>
           </div>
         )}
 
         {error && (
-          <div className="p-6 border border-red-300 bg-red-50 rounded-lg shadow-sm text-center">
-            <h2 className="text-xl font-medium text-red-700">Error</h2>
-            <p className="text-red-600 mt-2">{error}</p>
-            {cleanedScannedUrl && <p className="text-sm text-gray-500 mt-2">Scanned value (processed): {cleanedScannedUrl}</p>}
+          <div className="p-4 sm:p-6 border border-red-300 bg-red-50 rounded-lg shadow-sm text-center">
+            <h2 className="text-xl sm:text-2xl font-medium text-red-700">Error</h2>
+            <p className="text-red-600 mt-2 text-sm sm:text-base">{error}</p>
+            {cleanedScannedUrl && <p className="text-xs sm:text-sm text-gray-500 mt-2 break-all">Scanned value (processed): {cleanedScannedUrl}</p>}
           </div>
         )}
 
         {!loading && !error && data && (
-          <div className="p-6 border border-gray-300 rounded-lg shadow-sm bg-white space-y-4">
-            <p className="text-md text-gray-600">
+          <div className="p-4 sm:p-6 border border-gray-300 rounded-lg shadow-sm bg-white space-y-4">
+            <p className="text-sm sm:text-md text-gray-600">
               Report generated on
-              <strong className="block text-lg text-gray-800 break-all">{data.id}</strong>
+              <strong className="block text-lg sm:text-xl text-gray-800 break-all">{data.id}</strong>
             </p>
-            {data.details.data.company_name && <p className="text-lg text-gray-700"><strong>Description:</strong> {data.description}</p>}
-            <h1>Expiry timeline: { certData.due_date }</h1>
-            <h2 className="text-2xl font-semibold text-gray-800 mt-6 mb-3">Certificate Details:</h2>
+            {data.details.data.company_name && <p className="text-base sm:text-lg text-gray-700"><strong>Description:</strong> {data.description}</p>}
+            <h1 className="text-base sm:text-lg text-gray-700">Expiry timeline: <strong className="text-gray-800">{certData.due_date}</strong></h1>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mt-6 mb-3">Certificate Details:</h2>
             {Object.keys(data.details).length > 0 ? (
+              // Use `md:grid-cols-2` to make it 2 columns on medium screens and up, 1 column on small screens
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-               
-                <div className="flex flex-col space-y-2">
+                
+                <div className="flex flex-col space-y-3"> {/* Increased space-y for better mobile spacing */}
                   <div>
                     <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
                     <span className={`inline-block px-2 py-1 rounded text-sm font-medium ${certData.status === 'Active' || !certData.status ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{certData.status ? certData.status : 'Active'}</span>
@@ -237,25 +238,38 @@ const QrResultPage: React.FC = () => {
                       {certData.seriel_no || 'N/A'}
                     </span>
                   </div>
+                  {/* Add more fields here as needed from certData */}
+                  {certData.company_name && (
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Company Name</span>
+                      <span className="block text-gray-800 text-sm font-mono">{certData.company_name}</span>
+                    </div>
+                  )}
+                  {certData.company_address && (
+                    <div>
+                      <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Company Address</span>
+                      <span className="block text-gray-800 text-sm font-mono">{certData.company_address}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               
             ) : (
-              <p className="text-gray-600">No additional details available.</p>
+              <p className="text-gray-600 text-sm sm:text-base">No additional details available.</p>
             )}
-            <p className="text-xs text-gray-400 mt-4 pt-2 border-t border-gray-200">
+            <p className="text-xs text-gray-400 mt-4 pt-2 border-t border-gray-200 break-all">
               Original scanned URL: {data.originalScannedUrl}
             </p>
           </div>
         )}
 
         {!loading && !data && !error && (
-             <div className="p-6 border border-orange-300 bg-orange-50 rounded-lg shadow-sm text-center">
-                <h2 className="text-xl font-medium text-orange-700">Information Not Found</h2>
-                <p className="text-gray-700 mt-2">
-                    Could not display certificate details for the identifier "{extractedCertNo || 'Unknown'}".
-                </p>
-                {cleanedScannedUrl && <p className="text-sm text-gray-500 mt-2">Scanned value (processed): {cleanedScannedUrl}</p>}
+            <div className="p-4 sm:p-6 border border-orange-300 bg-orange-50 rounded-lg shadow-sm text-center">
+              <h2 className="text-xl sm:text-2xl font-medium text-orange-700">Information Not Found</h2>
+              <p className="text-gray-700 mt-2 text-sm sm:text-base">
+                  Could not display certificate details for the identifier "<strong className="break-all">{extractedCertNo || 'Unknown'}</strong>".
+              </p>
+              {cleanedScannedUrl && <p className="text-xs sm:text-sm text-gray-500 mt-2 break-all">Scanned value (processed): {cleanedScannedUrl}</p>}
             </div>
         )}
       </div>
