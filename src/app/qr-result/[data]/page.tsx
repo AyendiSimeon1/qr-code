@@ -28,12 +28,13 @@ interface QrResultDisplayData {
 
 const extractCertNoFromUrl = (scannedUrl: string): string | null => {
   try {
-    const url = new URL(scannedUrl);
-    const pathSegments = url.pathname.split('/').filter(segment => segment.length > 0);
-    const lastSegment = pathSegments.pop();
-    return lastSegment ? lastSegment.trim() : null;
+    // Get the last three characters from the decoded URL string
+    if (typeof scannedUrl === 'string' && scannedUrl.length >= 3) {
+      return scannedUrl.slice(-3);
+    }
+    return null;
   } catch (error) {
-    console.error("Error parsing URL to extract cert_no:", error);
+    console.error("Error extracting last three letters as cert_no:", error);
     return null;
   }
 };
@@ -51,6 +52,7 @@ const fetchCertificateDataByCertNo = async (
 
   // Construct URL for your Next.js proxy API route
   const proxyApiUrl = `/api/get-certificate-proxy?cert_no=${encodeURIComponent(certNo)}`;
+
   console.log('Fetching certificate data via proxy:', proxyApiUrl);
 
   try {
@@ -58,8 +60,7 @@ const fetchCertificateDataByCertNo = async (
       'Content-Type': 'application/json',
     };
     if (authToken) {
-      // The proxy API route expects this header.
-      // The proxy will then forward this (or a different one) to the third-party API.
+
       headers['Authorization'] = `Bearer ${authToken}`; // Assuming Bearer token
     } else {
       console.warn('Auth token not found in localStorage. Requesting proxy without it.');

@@ -1,5 +1,5 @@
 // src/components/features/dashboard/RecordsTable.tsx
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Badge } from './Badge';
 import { Spinner } from './Spinner'; // Assuming you have a Spinner component   
 
@@ -30,7 +30,7 @@ interface RecordsTableProps {
 
 // Mapping for status to badge appearance
 const statusMap: Record<RecordData['testStatus'], { color: 'red' | 'green' | 'yellow', text: string }> = {
-    'Expired': { color: 'red', text: 'Expired' },
+    'Exp+ired': { color: 'red', text: 'Expired' },
     'Current': { color: 'green', text: 'Current' },
     'Warning': { color: 'yellow', text: 'Expiring Soon' }, // Or 'Warning', adjust text as needed
 };
