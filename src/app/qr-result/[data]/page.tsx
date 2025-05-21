@@ -28,13 +28,15 @@ interface QrResultDisplayData {
 
 const extractCertNoFromUrl = (scannedUrl: string): string | null => {
   try {
-    // Get the last three characters from the decoded URL string
-    if (typeof scannedUrl === 'string' && scannedUrl.length >= 3) {
-      return scannedUrl.slice(-3);
+    // Extract everything after "qr-result/" from the URL
+    const match = scannedUrl.match(/qr-result\/(.+)/);
+    if (match && match[1]) {
+      return match[1];
     }
-    return null;
+    console.log('i am the scannedUrl', scannedUrl);
+    return scannedUrl; // Return the full string if pattern not found
   } catch (error) {
-    console.error("Error extracting last three letters as cert_no:", error);
+    console.error("Error extracting value after qr-result/:", error);
     return null;
   }
 };
@@ -178,9 +180,7 @@ const QrResultPage: React.FC = () => {
   }, [cleanedScannedUrl, rawDecodedDataFromUrl]);
 
   return (
-    <AppLayout title={data ? `Certificate Data` : 'QR Code Result'}>
-      {/* Container with responsive max-width and padding */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <h1 className="text-2xl sm:text-3xl font-semibold mb-6 text-gray-800">
           {loading ? 'Loading Certificate Details...' : 'Certificate Result'}
         </h1>
@@ -272,8 +272,9 @@ const QrResultPage: React.FC = () => {
               {cleanedScannedUrl && <p className="text-xs sm:text-sm text-gray-500 mt-2 break-all">Scanned value (processed): {cleanedScannedUrl}</p>}
             </div>
         )}
-      </div>
-    </AppLayout>
+      {/* </div>
+    </div> */}
+    </div>
   );
 };
 export default QrResultPage;
